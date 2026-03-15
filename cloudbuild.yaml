@@ -118,7 +118,8 @@ substitutions:
 # BUILD OPTIONS
 # =============================================================================
 
+timeout: 1200s # 20 minutes max
+
 options:
   logging: CLOUD_LOGGING_ONLY
-  machineType: E2_HIGHCPU_8 # Faster builds
-  timeout: 1200s # 20 minutes max
+  machineType: E2_HIGHCPU_8
