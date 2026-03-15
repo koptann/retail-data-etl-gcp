@@ -180,6 +180,13 @@ resource "google_project_iam_member" "retail_etl_log_writer" {
   member  = "serviceAccount:${google_service_account.retail_etl_sa.email}"
 }
 
+# Artifact Registry permissions (to pull Docker images for Cloud Run jobs)
+resource "google_project_iam_member" "retail_etl_artifact_registry_reader" {
+  project = var.project_id
+  role    = "roles/artifactregistry.reader"
+  member  = "serviceAccount:${google_service_account.retail_etl_sa.email}"
+}
+
 # -----------------------------------------------------------------------------
 # 3. dbt Runner SA - Data Transformation
 # -----------------------------------------------------------------------------
@@ -238,6 +245,7 @@ resource "time_sleep" "wait_for_sa_propagation" {
     google_project_iam_member.retail_etl_bigquery_data_editor,
     google_project_iam_member.retail_etl_bigquery_job_user,
     google_project_iam_member.retail_etl_run_invoker,
+    google_project_iam_member.retail_etl_artifact_registry_reader,
     google_project_iam_member.dbt_runner_bigquery_data_editor,
     google_project_iam_member.dbt_runner_bigquery_job_user
   ]
