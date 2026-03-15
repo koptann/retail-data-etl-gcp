@@ -64,9 +64,8 @@ main:
             - log_country_load_error:
                 call: sys.log
                 args:
-                  text: "ERROR loading countries.csv"
-                  severity: "ERROR"
                   data: $${e}
+                  severity: "ERROR"
             - fail_country_load:
                 raise: $${e}
 
@@ -114,9 +113,8 @@ main:
             - log_invoice_load_error:
                 call: sys.log
                 args:
-                  text: "ERROR loading invoices.csv"
-                  severity: "ERROR"
                   data: $${e}
+                  severity: "ERROR"
             - fail_invoice_load:
                 raise: $${e}
 
@@ -137,9 +135,8 @@ main:
             - log_dbt_job_error:
                 call: sys.log
                 args:
-                  text: "ERROR executing dbt job"
-                  severity: "ERROR"
                   data: $${e}
+                  severity: "ERROR"
             - fail_dbt_job:
                 raise: $${e}
 
