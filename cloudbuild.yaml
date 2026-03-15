@@ -84,6 +84,7 @@ steps:
         terraform plan \
           -var="project_id=${PROJECT_ID}" \
           -var="dbt_image=${_AR_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_DBT_IMAGE_NAME}:${SHORT_SHA}" \
+          -var="workflow_name=${_WORKFLOW_NAME}" \
           -out=tfplan
 
   # ===========================================================================
@@ -112,6 +113,7 @@ substitutions:
   _TF_STATE_PREFIX: override-from-trigger  # Actual value from var.tf_state_prefix
   _AR_REGION: override-from-trigger        # Actual value from var.region
   _AR_REPO: override-from-trigger          # Actual value from var.ar_repo_name
+  _WORKFLOW_NAME: override-from-trigger    # Actual value from var.workflow_name
   _DBT_IMAGE_NAME: dbt-etl-job             # Static image name
 
 # =============================================================================

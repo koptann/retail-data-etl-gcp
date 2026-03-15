@@ -77,6 +77,7 @@ module "platform" {
   cloudbuild_trigger_branch  = var.cloudbuild_trigger_branch
   tf_state_bucket            = var.tf_state_bucket
   tf_state_prefix            = var.tf_state_prefix
+  workflow_name              = var.workflow_name
 
   labels = var.labels
 }

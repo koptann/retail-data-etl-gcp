@@ -81,6 +81,11 @@ variable "labels" {
 # CI/CD Configuration
 # -----------------------------------------------------------------------------
 
+variable "workflow_name" {
+  description = "Workflow name to pass to Cloud Build"
+  type        = string
+}
+
 variable "create_cloud_build_trigger" {
   description = "Create Cloud Build trigger for GitOps automation"
   type        = bool

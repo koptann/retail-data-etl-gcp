@@ -173,6 +173,13 @@ resource "google_project_iam_member" "retail_etl_run_invoker" {
   member  = "serviceAccount:${google_service_account.retail_etl_sa.email}"
 }
 
+# Logging permissions (for workflow sys.log calls)
+resource "google_project_iam_member" "retail_etl_log_writer" {
+  project = var.project_id
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.retail_etl_sa.email}"
+}
+
 # -----------------------------------------------------------------------------
 # 3. dbt Runner SA - Data Transformation
 # -----------------------------------------------------------------------------
@@ -506,6 +513,7 @@ resource "google_cloudbuild_trigger" "main_branch_deploy" {
     _TF_STATE_PREFIX = var.tf_state_prefix
     _AR_REGION       = var.region
     _AR_REPO         = var.ar_repo_name
+    _WORKFLOW_NAME   = var.workflow_name
   }
 
   depends_on = [
