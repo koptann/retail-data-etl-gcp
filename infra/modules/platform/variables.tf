@@ -67,6 +67,11 @@ variable "ar_repo_name" {
   type        = string
 }
 
+variable "dbt_job_name" {
+  description = "Cloud Run dbt job name"
+  type        = string
+}
+
 # -----------------------------------------------------------------------------
 # Resource Tagging
 # -----------------------------------------------------------------------------
@@ -120,4 +125,14 @@ variable "tf_state_prefix" {
   description = "Prefix for Terraform state files"
   type        = string
   default     = "terraform/infra"
+}
+
+# -----------------------------------------------------------------------------
+# Observability Configuration
+# -----------------------------------------------------------------------------
+
+variable "monthly_budget_amount" {
+  description = "Monthly budget amount in USD for cost alerts"
+  type        = number
+  default     = 100
 }

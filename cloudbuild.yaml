@@ -85,6 +85,11 @@ steps:
           -var="project_id=${PROJECT_ID}" \
           -var="dbt_image=${_AR_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_DBT_IMAGE_NAME}:${SHORT_SHA}" \
           -var="workflow_name=${_WORKFLOW_NAME}" \
+          -var="dataset_id=${_DATASET_ID}" \
+          -var="bucket_name=${_BUCKET_NAME}" \
+          -var="dbt_job_name=${_DBT_JOB_NAME}" \
+          -var="environment=${_ENVIRONMENT}" \
+          -var="monthly_budget_amount=${_MONTHLY_BUDGET}" \
           -out=tfplan
 
   # ===========================================================================
@@ -114,6 +119,11 @@ substitutions:
   _AR_REGION: override-from-trigger        # Actual value from var.region
   _AR_REPO: override-from-trigger          # Actual value from var.ar_repo_name
   _WORKFLOW_NAME: override-from-trigger    # Actual value from var.workflow_name
+  _DATASET_ID: override-from-trigger       # Actual value from var.dataset_id
+  _BUCKET_NAME: override-from-trigger      # Actual value from var.bucket_name
+  _DBT_JOB_NAME: override-from-trigger     # Actual value from var.dbt_job_name
+  _ENVIRONMENT: override-from-trigger      # Actual value from var.environment
+  _MONTHLY_BUDGET: override-from-trigger   # Actual value from var.monthly_budget_amount
   _DBT_IMAGE_NAME: dbt-etl-job             # Static image name
 
 # =============================================================================

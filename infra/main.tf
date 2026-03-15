@@ -69,6 +69,7 @@ module "platform" {
 
   # Container infrastructure
   ar_repo_name = var.ar_repo_name
+  dbt_job_name = var.dbt_job_name
 
   # CI/CD configuration
   create_cloud_build_trigger = var.create_cloud_build_trigger
@@ -78,6 +79,9 @@ module "platform" {
   tf_state_bucket            = var.tf_state_bucket
   tf_state_prefix            = var.tf_state_prefix
   workflow_name              = var.workflow_name
+
+  # Observability configuration
+  monthly_budget_amount = var.monthly_budget_amount
 
   labels = var.labels
 }

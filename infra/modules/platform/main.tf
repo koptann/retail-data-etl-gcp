@@ -509,11 +509,16 @@ resource "google_cloudbuild_trigger" "main_branch_deploy" {
   service_account = google_service_account.cloudbuild_sa.id
 
   substitutions = {
-    _TF_STATE_BUCKET = var.tf_state_bucket
-    _TF_STATE_PREFIX = var.tf_state_prefix
-    _AR_REGION       = var.region
-    _AR_REPO         = var.ar_repo_name
-    _WORKFLOW_NAME   = var.workflow_name
+    _TF_STATE_BUCKET      = var.tf_state_bucket
+    _TF_STATE_PREFIX      = var.tf_state_prefix
+    _AR_REGION            = var.region
+    _AR_REPO              = var.ar_repo_name
+    _WORKFLOW_NAME        = var.workflow_name
+    _DATASET_ID           = var.dataset_id
+    _BUCKET_NAME          = var.bucket_name
+    _DBT_JOB_NAME         = var.dbt_job_name
+    _ENVIRONMENT          = var.environment
+    _MONTHLY_BUDGET       = tostring(var.monthly_budget_amount)
   }
 
   depends_on = [
