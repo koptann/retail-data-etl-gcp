@@ -76,3 +76,43 @@ variable "labels" {
   type        = map(string)
   default     = {}
 }
+
+# -----------------------------------------------------------------------------
+# CI/CD Configuration
+# -----------------------------------------------------------------------------
+
+variable "create_cloud_build_trigger" {
+  description = "Create Cloud Build trigger for GitOps automation"
+  type        = bool
+  default     = false
+}
+
+variable "github_owner" {
+  description = "GitHub repository owner"
+  type        = string
+  default     = ""
+}
+
+variable "github_repo_name" {
+  description = "GitHub repository name"
+  type        = string
+  default     = ""
+}
+
+variable "cloudbuild_trigger_branch" {
+  description = "Git branch pattern to trigger builds"
+  type        = string
+  default     = "^main$"
+}
+
+variable "tf_state_bucket" {
+  description = "GCS bucket for Terraform state"
+  type        = string
+  default     = ""
+}
+
+variable "tf_state_prefix" {
+  description = "Prefix for Terraform state files"
+  type        = string
+  default     = "terraform/infra"
+}

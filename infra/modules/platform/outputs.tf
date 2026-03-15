@@ -68,3 +68,13 @@ output "ar_repository_url" {
   description = "Artifact Registry repository URL"
   value       = "${var.region}-docker.pkg.dev/${var.project_id}/${var.ar_repo_name}"
 }
+
+# -----------------------------------------------------------------------------
+# Dependency Signal Outputs
+# -----------------------------------------------------------------------------
+
+output "platform_ready" {
+  description = "Signal that Platform infrastructure is ready (dependency helper)"
+  value       = time_sleep.wait_for_sa_propagation.id
+  depends_on  = [time_sleep.wait_for_sa_propagation]
+}

@@ -32,6 +32,11 @@ variable "dataset_id" {
   type        = string
 }
 
+variable "platform_ready" {
+  description = "Dependency signal ensuring Platform infrastructure is ready"
+  type        = string
+}
+
 # -----------------------------------------------------------------------------
 # Pipeline Configuration
 # -----------------------------------------------------------------------------

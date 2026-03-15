@@ -55,6 +55,31 @@ resource "google_project_service" "pubsub_api" {
   disable_dependent_services = true
 }
 
+resource "google_project_service" "cloudbuild_api" {
+  service            = "cloudbuild.googleapis.com"
+  disable_on_destroy = false
+}
+
+# -----------------------------------------------------------------------------
+# API Propagation Delay
+# -----------------------------------------------------------------------------
+# Wait for APIs to propagate before creating dependent resources
+
+resource "time_sleep" "wait_for_api_propagation" {
+  create_duration = "90s" # APIs need time to fully propagate
+
+  depends_on = [
+    google_project_service.iam_api,
+    google_project_service.cloudresourcemanager_api,
+    google_project_service.storage_api,
+    google_project_service.bigquery_api,
+    google_project_service.artifact_registry_api,
+    google_project_service.secretmanager_api,
+    google_project_service.pubsub_api,
+    google_project_service.cloudbuild_api
+  ]
+}
+
 # =============================================================================
 # PROJECT DATA - For Service Agent Permissions
 # =============================================================================
@@ -77,7 +102,7 @@ resource "google_service_account" "cloudbuild_sa" {
   display_name = "Cloud Build Infrastructure Manager"
   description  = "Service account for Cloud Build to run Terraform and manage infrastructure"
 
-  depends_on = [google_project_service.iam_api]
+  depends_on = [time_sleep.wait_for_api_propagation]
 }
 
 # Grant Cloud Build SA Editor permissions (infrastructure deployment)
@@ -104,7 +129,7 @@ resource "google_service_account" "retail_etl_sa" {
   display_name = "Retail ETL Orchestrator"
   description  = "Runtime service account for workflow orchestration and Cloud Run job execution"
 
-  depends_on = [google_project_service.iam_api]
+  depends_on = [time_sleep.wait_for_api_propagation]
 }
 
 # GCS permissions
@@ -158,7 +183,7 @@ resource "google_service_account" "dbt_runner_sa" {
   display_name = "dbt BigQuery Runner"
   description  = "Dedicated service account for dbt transformations (Principle of Least Privilege)"
 
-  depends_on = [google_project_service.iam_api]
+  depends_on = [time_sleep.wait_for_api_propagation]
 }
 
 # BigQuery permissions for dbt transformations
@@ -431,4 +456,60 @@ resource "google_artifact_registry_repository" "dbt_images" {
   )
 
   depends_on = [google_project_service.artifact_registry_api]
+}
+
+# =============================================================================
+# CI/CD - CLOUD BUILD TRIGGER
+# =============================================================================
+# Conditional Cloud Build trigger for GitOps automation
+# 
+# IMPORTANT: Only created when var.create_cloud_build_trigger = true
+# 
+# PREREQUISITE: GitHub 2nd gen connection must be created first via console
+# 1. Go to Cloud Build > Repositories (2nd gen)
+# 2. Create connection: projects/{PROJECT_ID}/locations/europe-west9/connections/github-connection
+# 3. Authorize GitHub OAuth
+# 4. Link repository
+# 5. Set create_cloud_build_trigger = true in terraform.tfvars
+# 
+# This trigger automatically:
+# - Builds dbt Docker image (tagged with git SHA)
+# - Runs terraform plan
+# - Runs terraform apply with new image
+# 
+# Architecture:
+# - cloudbuild-sa runs the build and terraform
+# - retail-etl-sa runs workflows and cloud run jobs
+# - dbt-runner executes dbt transformations
+
+resource "google_cloudbuild_trigger" "main_branch_deploy" {
+  count       = var.create_cloud_build_trigger ? 1 : 0
+  name        = "retail-platform-deploy"
+  description = "Deploy retail data platform on main branch push"
+  location    = "europe-west9" # Must match GitHub connection region
+
+  repository_event_config {
+    repository = "projects/${var.project_id}/locations/europe-west9/connections/github-connection/repositories/${var.github_owner}-${var.github_repo_name}"
+
+    push {
+      branch = var.cloudbuild_trigger_branch
+    }
+  }
+
+  filename = "cloudbuild.yaml"
+
+  # Use cloudbuild-sa for infrastructure deployment
+  service_account = google_service_account.cloudbuild_sa.id
+
+  substitutions = {
+    _TF_STATE_BUCKET = var.tf_state_bucket
+    _TF_STATE_PREFIX = var.tf_state_prefix
+    _AR_REGION       = var.region
+    _AR_REPO         = var.ar_repo_name
+  }
+
+  depends_on = [
+    google_project_service.cloudbuild_api,
+    time_sleep.wait_for_sa_propagation
+  ]
 }

@@ -1,0 +1,24 @@
+dbtetl:
+  outputs:
+    dev: # Method 1: Service Account (Production - Cloud Run)
+      dataset: mtech_retail_dsy
+      job_execution_timeout_seconds: 300
+      job_retries: 1
+      location: EU
+      method: service-account
+      keyfile: /secrets/dbt-keyfile
+      priority: interactive
+      project: "{{ env_var('GCP_PROJECT_ID', 'mtech-retail-etl') }}"  # Reads from env var, fallback to default
+      threads: 1
+      type: bigquery
+    dev_local: # Method 2: OAuth (Local Development)
+      dataset: mtech_retail_dsy
+      job_execution_timeout_seconds: 300
+      job_retries: 1
+      location: EU
+      method: oauth
+      priority: interactive
+      project: "{{ env_var('GCP_PROJECT_ID', 'mtech-retail-etl') }}"  # Reads from env var, fallback to default
+      threads: 1
+      type: bigquery
+  target: dev  # Cloud Run uses 'dev' (service-account), local dev uses 'dev_local' (oauth)

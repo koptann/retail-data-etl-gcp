@@ -1,0 +1,160 @@
+# =============================================================================
+# RETAIL ETL WORKFLOW - Cloud Workflows YAML Definition
+# =============================================================================
+# Pipeline Flow:
+#   1. Load raw CSV files from GCS to BigQuery (raw_country, raw_invoice)
+#   2. Execute dbt Cloud Run job to transform raw data
+# =============================================================================
+
+main:
+  steps:
+    # =========================================================================
+    # STEP 1: Initialize Variables
+    # =========================================================================
+    - init:
+        assign:
+          - raw_bq_create_disposition: "CREATE_NEVER"
+          - raw_bq_write_disposition: "WRITE_TRUNCATE"
+          - dataset: "${dataset_id}"
+          - project_id: $${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+          - region: "${region}"
+          - dbt_job_name: "${dbt_job_name}"
+          - bucket_name: "${bucket_name}"
+          - raw_files_source_uri: $${"gs://" + bucket_name + "/dataset/"}
+
+    # =========================================================================
+    # STEP 2: Load Countries CSV to BigQuery
+    # =========================================================================
+    - load_countries_to_bigquery:
+        try:
+          call: googleapis.bigquery.v2.jobs.insert
+          args:
+            projectId: $${project_id}
+            body:
+              configuration:
+                load:
+                  sourceUris: [$${raw_files_source_uri + "countries.csv"}]
+                  destinationTable:
+                    projectId: $${project_id}
+                    datasetId: $${dataset}
+                    tableId: "raw_country"
+                  skipLeadingRows: 1
+                  schema:
+                    fields:
+                      - name: "id"
+                        type: "STRING"
+                      - name: "iso"
+                        type: "STRING"
+                      - name: "name"
+                        type: "STRING"
+                      - name: "nicename"
+                        type: "STRING"
+                      - name: "iso3"
+                        type: "STRING"
+                      - name: "numcode"
+                        type: "STRING"
+                      - name: "phonecode"
+                        type: "STRING"
+                  createDisposition: $${raw_bq_create_disposition}
+                  writeDisposition: $${raw_bq_write_disposition}
+          result: loadCountryResult
+        except:
+          as: e
+          steps:
+            - log_country_load_error:
+                call: sys.log
+                args:
+                  text: "ERROR loading countries.csv"
+                  severity: "ERROR"
+                  data: $${e}
+            - fail_country_load:
+                raise: $${e}
+
+    # =========================================================================
+    # STEP 3: Load Invoices CSV to BigQuery
+    # =========================================================================
+    - load_invoices_to_bigquery:
+        try:
+          call: googleapis.bigquery.v2.jobs.insert
+          args:
+            projectId: $${project_id}
+            body:
+              configuration:
+                load:
+                  sourceUris: [$${raw_files_source_uri + "invoices.csv"}]
+                  destinationTable:
+                    projectId: $${project_id}
+                    datasetId: $${dataset}
+                    tableId: "raw_invoice"
+                  skipLeadingRows: 1
+                  schema:
+                    fields:
+                      - name: "InvoiceNo"
+                        type: "STRING"
+                      - name: "StockCode"
+                        type: "STRING"
+                      - name: "Description"
+                        type: "STRING"
+                      - name: "Quantity"
+                        type: "STRING"
+                      - name: "InvoiceDate"
+                        type: "STRING"
+                      - name: "UnitPrice"
+                        type: "STRING"
+                      - name: "CustomerID"
+                        type: "STRING"
+                      - name: "Country"
+                        type: "STRING"
+                  createDisposition: $${raw_bq_create_disposition}
+                  writeDisposition: $${raw_bq_write_disposition}
+          result: loadInvoiceResult
+        except:
+          as: e
+          steps:
+            - log_invoice_load_error:
+                call: sys.log
+                args:
+                  text: "ERROR loading invoices.csv"
+                  severity: "ERROR"
+                  data: $${e}
+            - fail_invoice_load:
+                raise: $${e}
+
+    # =========================================================================
+    # STEP 4: Execute dbt Cloud Run Job (Data Transformation)
+    # =========================================================================
+    - trigger_dbt_job:
+        try:
+          call: http.post
+          args:
+            url: $${"https://run.googleapis.com/v2/projects/" + project_id + "/locations/" + region + "/jobs/" + dbt_job_name + ":run"}
+            auth:
+              type: OAuth2
+          result: dbtJobResult
+        except:
+          as: e
+          steps:
+            - log_dbt_job_error:
+                call: sys.log
+                args:
+                  text: "ERROR executing dbt job"
+                  severity: "ERROR"
+                  data: $${e}
+            - fail_dbt_job:
+                raise: $${e}
+
+    # =========================================================================
+    # STEP 5: Log Success and Return Result
+    # =========================================================================
+    - log_success:
+        call: sys.log
+        args:
+          text: "✅ ETL pipeline completed successfully"
+          severity: "INFO"
+
+    - return_result:
+        return:
+          status: "SUCCESS"
+          countries_load_result: $${loadCountryResult}
+          invoices_load_result: $${loadInvoiceResult}
+          dbt_execution_result: $${dbtJobResult}

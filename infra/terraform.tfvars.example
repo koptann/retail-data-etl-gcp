@@ -43,10 +43,38 @@ project_id = "your-gcp-project-id"
 # -----------------------------------------------------------------------------
 
 # dbt_job_name = "retail-etl-dbt-job"
-# ar_repo_name = "dbt-images"
+# ar_repo_name = "mtech-dbt-images"
 
-# Note: dbt_image will be automatically built and tagged by Cloud Build
-# dbt_image = "europe-west1-docker.pkg.dev/your-project-id/dbt-images/dbt-etl-job:latest"
+# -----------------------------------------------------------------------------
+# Docker Image Configuration
+# -----------------------------------------------------------------------------
+
+# Default: Use dummy image for initial Terraform deployment
+# dbt_image = "gcr.io/cloudrun/hello"
+
+# After Cloud Build runs, it will update to:
+# dbt_image = "europe-west1-docker.pkg.dev/your-project-id/mtech-dbt-images/dbt-etl-job:latest"
+
+# -----------------------------------------------------------------------------
+# CI/CD Configuration (Cloud Build)
+# -----------------------------------------------------------------------------
+
+# IMPORTANT: Set to true ONLY AFTER creating GitHub connection in Cloud Build console
+# Steps:
+# 1. Go to Cloud Build > Repositories (2nd gen)
+# 2. Click "CREATE HOST CONNECTION"
+# 3. Select GitHub, region: europe-west9
+# 4. Connect name: github-connection
+# 5. Authorize OAuth
+# 6. Link your repository
+# 7. Set values below and apply
+
+# create_cloud_build_trigger = false  # true to enable GitOps
+# github_owner = "your-github-username"
+# github_repo_name = "retail-data-platform-gcp"
+# cloudbuild_trigger_branch = "^main$"
+# tf_state_bucket = "your-project-id-tfstate"
+# tf_state_prefix = "terraform/infra"
 
 # -----------------------------------------------------------------------------
 # Workflow Configuration

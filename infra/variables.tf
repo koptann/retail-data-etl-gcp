@@ -92,7 +92,7 @@ variable "dbt_job_name" {
 variable "dbt_image" {
   description = "Docker image for dbt job (will be built by Cloud Build)"
   type        = string
-  default     = "europe-west1-docker.pkg.dev/PROJECT_ID/dbt-images/dbt-etl-job:latest"
+  default     = "gcr.io/cloudrun/hello"
 }
 
 variable "ar_repo_name" {
@@ -147,6 +147,12 @@ variable "quality_check_schedule" {
 # CI/CD Configuration
 # -----------------------------------------------------------------------------
 
+variable "create_cloud_build_trigger" {
+  description = "Create Cloud Build trigger for GitOps (requires GitHub connection setup first)"
+  type        = bool
+  default     = false
+}
+
 variable "github_owner" {
   description = "GitHub repository owner/organization"
   type        = string
@@ -157,6 +163,12 @@ variable "github_repo_name" {
   description = "GitHub repository name"
   type        = string
   default     = ""
+}
+
+variable "cloudbuild_trigger_branch" {
+  description = "Git branch pattern to trigger builds"
+  type        = string
+  default     = "^main$"
 }
 
 variable "tf_state_bucket" {

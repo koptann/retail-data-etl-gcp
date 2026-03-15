@@ -70,6 +70,14 @@ module "platform" {
   # Container infrastructure
   ar_repo_name = var.ar_repo_name
 
+  # CI/CD configuration
+  create_cloud_build_trigger = var.create_cloud_build_trigger
+  github_owner               = var.github_owner
+  github_repo_name           = var.github_repo_name
+  cloudbuild_trigger_branch  = var.cloudbuild_trigger_branch
+  tf_state_bucket            = var.tf_state_bucket
+  tf_state_prefix            = var.tf_state_prefix
+
   labels = var.labels
 }
 
@@ -96,6 +104,7 @@ module "pipeline" {
   dbt_runner_secret_id = module.platform.dbt_runner_secret_id
   bucket_name          = module.platform.bucket_name
   dataset_id           = module.platform.dataset_id
+  platform_ready       = module.platform.platform_ready
 
   # Pipeline configuration
   workflow_name = var.workflow_name
