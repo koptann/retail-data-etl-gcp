@@ -1,0 +1,66 @@
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+terraform.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# dbt
+dbt-code/target/
+dbt-code/dbt_packages/
+dbt-code/logs/
+dbt-code/.user.yml
+dbt-code/profiles.yml
+!dbt-code/profiles.yml.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+*.egg-info/
+
+# Secrets & Credentials
+*.json
+!cloudbuild.json
+*.pem
+*.key
+*-key.json
+.env
+.env.local
+secrets/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+.cache/
+
+# OS
+Thumbs.db
+.DS_Store

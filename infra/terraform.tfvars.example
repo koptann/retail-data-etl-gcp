@@ -1,0 +1,78 @@
+# =============================================================================
+# Example Terraform Variables Configuration
+# =============================================================================
+# Copy this file to terraform.tfvars and update with your values
+# cp terraform.tfvars.example terraform.tfvars
+# 
+# Note: terraform.tfvars is gitignored for security
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Required Variables
+# -----------------------------------------------------------------------------
+
+project_id = "your-gcp-project-id"
+
+# -----------------------------------------------------------------------------
+# Optional Variables (uncomment to override defaults)
+# -----------------------------------------------------------------------------
+
+# region      = "europe-west1"
+# environment = "prod"
+# owner       = "your-name"
+
+# -----------------------------------------------------------------------------
+# Service Account Names
+# -----------------------------------------------------------------------------
+
+# cloudbuild_sa_name = "cloudbuild-sa"
+# retail_etl_sa_name = "retail-etl-sa"
+# dbt_runner_sa_name = "dbt-runner"
+
+# -----------------------------------------------------------------------------
+# Storage Configuration
+# -----------------------------------------------------------------------------
+
+# bucket_name          = "retail-etl-data"
+# dataset_id           = "retail_dsy"
+# enable_partitioning  = true
+# enable_lifecycle     = true
+
+# -----------------------------------------------------------------------------
+# Compute Configuration
+# -----------------------------------------------------------------------------
+
+# dbt_job_name = "retail-etl-dbt-job"
+# ar_repo_name = "dbt-images"
+
+# Note: dbt_image will be automatically built and tagged by Cloud Build
+# dbt_image = "europe-west1-docker.pkg.dev/your-project-id/dbt-images/dbt-etl-job:latest"
+
+# -----------------------------------------------------------------------------
+# Workflow Configuration
+# -----------------------------------------------------------------------------
+
+# workflow_name = "retail-dsy-workflow"
+
+# -----------------------------------------------------------------------------
+# Observability Configuration
+# -----------------------------------------------------------------------------
+
+# notification_channels = ["your-email@example.com"]
+# enable_cost_alerts    = true
+# monthly_budget_amount = 100
+
+# -----------------------------------------------------------------------------
+# Data Quality Configuration
+# -----------------------------------------------------------------------------
+
+# quality_check_schedule = "0 9 * * *"  # Daily at 9 AM UTC
+
+# -----------------------------------------------------------------------------
+# CI/CD Configuration (for Cloud Build triggers)
+# -----------------------------------------------------------------------------
+
+# github_owner     = "your-github-username"
+# github_repo_name = "retail-data-platform-gcp"
+# tf_state_bucket  = "your-tf-state-bucket"
+# tf_state_prefix  = "terraform/infra"
