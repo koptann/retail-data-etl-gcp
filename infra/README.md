@@ -1,63 +1,110 @@
-# Retail Data Platform - Directory Structure
+# Retail Data Platform - Infrastructure
 
-This folder contains the complete Terraform infrastructure code for the Retail Data Platform.
+**Domain-Driven Terraform Architecture**
 
-## Phase 0 Status: Module Structure Established ✅
+This folder contains the Terraform infrastructure code for the Retail Data Platform, organized following **Domain-Driven Design** principles.
 
-### What's Created
+## Phase 0 Status: Domain-Driven Module Structure ✅
 
-- **Root module** (`main.tf`) - Orchestrates all child modules
-- **Variables** (`variables.tf`) - Configurable parameters
-- **Outputs** (`outputs.tf`) - Exported values
-- **Backend configuration** (`backend.tf`) - Remote state setup
-- **Example configuration** (`terraform.tfvars.example`) - Template for your values
+### Architecture Philosophy
 
-### Module Structure
+Modules are organized by **business capability** (what they DO), not technical resource type (what they ARE):
 
 ```
 modules/
-├── iam/              ✅ Structure ready - Service accounts & permissions
-├── storage/          ✅ Structure ready - GCS & BigQuery
-├── compute/          ✅ Structure ready - Cloud Run & Artifact Registry
-├── orchestration/    ✅ Structure ready - Workflows & Eventarc
-├── observability/    🔄 Placeholder - Phase 2 implementation
-└── data_quality/     🔄 Placeholder - Phase 3 implementation
+├── platform/        # DOMAIN: Infrastructure provisioning (BUILD)
+├── pipeline/        # DOMAIN: Data orchestration & execution (RUN)
+└── observability/   # DOMAIN: Monitoring & quality (OBSERVE)
 ```
+
+This mirrors patterns used by Netflix, Airbnb, and Uber for their data platforms, and follows Domain-Driven Design bounded contexts.
+
+### What's Created
+
+- **Root module** (`main.tf`) - Composes three domain modules
+- **Variables** (`variables.tf`) - Configurable parameters
+- **Outputs** (`outputs.tf`) - Exported values
+- **Backend configuration** (`backend.tf`) - Remote state setup
+- **Example configuration** (`terraform.tfvars.example`) - Template for values
+
+### Domain Modules
+
+#### `platform/` - Infrastructure Foundation
+**Business Capability:** Provision all foundational cloud resources
+
+**Contains:**
+- ✅ IAM: Service accounts, role bindings, Secret Manager
+- ✅ Storage: GCS bucket, BigQuery dataset, raw tables
+- ✅ Container Infrastructure: Artifact Registry
+
+**Status:** Structure complete ✅ | Implementation: Phase 1
+
+---
+
+#### `pipeline/` - Orchestration & Execution
+**Business Capability:** Orchestrate and execute the ELT pipeline
+
+**Contains:**
+- ✅ Workflows: Cloud Workflows definitions
+- ✅ Event Triggers: Eventarc on GCS uploads
+- ✅ Compute: Cloud Run jobs for dbt
+
+**Status:** Structure complete ✅ | Implementation: Phase 1
+
+---
+
+#### `observability/` - Monitoring & Quality
+**Business Capability:** Ensure platform reliability and data quality
+
+**Contains:**
+- 🔄 Monitoring: Alert policies, metrics, dashboards (Phase 2)
+- 🔄 Data Quality: Validation, quality checks (Phase 3)
+
+**SDependency Graph
+
+Following Domain-Driven Design bounded contexts:
+
+```
+┌─────────────┐
+│  platform   │  Infrastructure provisioning (BUILD)
+└──────┬──────┘
+       │
+       ↓
+┌─────────────┐
+│  pipeline   │  Data orchestration & execution (RUN)
+└──────┬──────┘
+       │
+       ↓
+┌─────────────┐
+│observability│  Monitoring & quality (OBSERVE)
+└─────────────┘
+```
+
+Clean dependency flow: platform → pipeline → observability
 
 ## Next Steps
 
-### Phase 1: Implement Core Modules
+### Phase 1: Implement Core Domains
 
-1. **IAM Module** - Complete service account creation and IAM bindings
-2. **Storage Module** - Build GCS buckets and BigQuery resources
-3. **Compute Module** - Set up Cloud Run jobs and Artifact Registry
-4. **Orchestration Module** - Create workflows and event triggers
+1. **Platform Module** - IAM + storage + Artifact Registry
+2. **Pipeline Module** - Workflows + triggers + Cloud Run jobscp terraform.tfvars.example terraform.tfvars
+   `Domain-Driven** - Modules organized by business capability  
+✅ **Cohesive** - Resources that change together stay together  
+✅ **Bounded Contexts** - Clear domain boundaries (like microservices)  
+✅ **Testable** - Each module testable independently  
+✅ **Industry-Aligned** - Follows Netflix/Airbnb/Uber patterns
 
-### How to Use
+## Why Domain-Driven Modules?
 
-1. Copy example configuration:
-   ```bash
-   cp terraform.tfvars.example terraform.tfvars
-   ```
+Like microservices organized by business domain ("order-service", "payment-service") rather than technical layer ("database-service", "api-service"), our infrastructure follows the same principle.
 
-2. Edit `terraform.tfvars` with your project details
+**Benefits:**
+- Matches data engineering mental model (build → run → observe)
+- Changes are cohesive (IAM + storage + compute for one feature)
+- Easier to reason about ("I need to fix the pipeline? Check `pipeline/`")
+- Aligns with how data platforms are actually operated
 
-3. Initialize Terraform:
-   ```bash
-   terraform init
-   ```
-
-4. Review plan:
-   ```bash
-   terraform plan
-   ```
-
-5. Apply (when modules are implemented):
-   ```bash
-   terraform apply
-   ```
-
-## Design Principles
+See `modules/README.md` for detailed architecture documentation.
 
 ✅ **Modular** - Each module has single responsibility  
 ✅ **Reusable** - Modules can be used in other projects  

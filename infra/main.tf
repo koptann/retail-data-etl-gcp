@@ -1,170 +1,140 @@
 # =============================================================================
-# Root Terraform Configuration - Retail Data Platform
+# RETAIL DATA PLATFORM - ROOT MODULE
 # =============================================================================
-# This is the main entry point that orchestrates all infrastructure modules
-# Follow the principle: thin root module, thick child modules
+# Domain-Driven Architecture - Business Capability Modules
+#
+# This root module composes three domain modules:
+# - platform: Infrastructure provisioning (BUILD)
+# - pipeline: Data orchestration & execution (RUN)  
+# - observability: Monitoring & quality (OBSERVE)
 # =============================================================================
 
 terraform {
   required_version = ">= 1.6"
-  
+
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 5.13"
-    }
-    time = {
-      source  = "hashicorp/time"
-      version = "~> 0.13"
+      version = "~> 5.0"
     }
   }
 }
 
-# =============================================================================
-# Local Variables
-# =============================================================================
-
-locals {
-  project_id = var.project_id
-  region     = var.region
-  
-  # Common tags for all resources
-  labels = {
-    project     = "retail-data-platform"
-    environment = var.environment
-    managed_by  = "terraform"
-    owner       = var.owner
-  }
-  
-  # Service accounts
-  cloudbuild_sa_email = "${var.cloudbuild_sa_name}@${var.project_id}.iam.gserviceaccount.com"
-  retail_etl_sa_email = "${var.retail_etl_sa_name}@${var.project_id}.iam.gserviceaccount.com"
-  dbt_runner_sa_email = "${var.dbt_runner_sa_name}@${var.project_id}.iam.gserviceaccount.com"
+provider "google" {
+  project = var.project_id
+  region  = var.region
 }
 
 # =============================================================================
-# Module: IAM - Service Accounts & Permissions
+# MODULE DECLARATIONS - Domain-Driven Architecture
 # =============================================================================
-# Creates service accounts first - no dependencies on other resources
-# This eliminates the "bootstrap paradox"
+# Modules are organized by BUSINESS CAPABILITY (what they DO):
+# - platform: Infrastructure provisioning (IAM + storage + container infra)
+# - pipeline: Data orchestration & execution (workflows + triggers + compute)
+# - observability: Monitoring & quality (cross-cutting concerns)
+#
+# This follows Domain-Driven Design principles, similar to microservices
+# organized by business domain rather than technical layers.
+# =============================================================================
 
-module "iam" {
-  source = "./modules/iam"
-  
-  project_id = local.project_id
-  region     = local.region
-  
+# -----------------------------------------------------------------------------
+# Platform Module - Infrastructure Foundation
+# -----------------------------------------------------------------------------
+# Business Domain: Infrastructure provisioning and identity management
+# 
+# Creates all foundational resources including:
+# - IAM: Service accounts, role bindings, Secret Manager
+# - Storage: GCS bucket, BigQuery dataset, raw tables
+# - Container Infrastructure: Artifact Registry
+#
+# Dependencies: None (foundational module)
+
+module "platform" {
+  source = "./modules/platform"
+
+  project_id  = var.project_id
+  region      = var.region
+  environment = var.environment
+
+  # IAM configuration
   cloudbuild_sa_name = var.cloudbuild_sa_name
   retail_etl_sa_name = var.retail_etl_sa_name
   dbt_runner_sa_name = var.dbt_runner_sa_name
-  
-  labels = local.labels
+
+  # Storage configuration
+  bucket_name         = var.bucket_name
+  dataset_id          = var.dataset_id
+  enable_partitioning = var.enable_partitioning
+  enable_lifecycle    = var.enable_lifecycle
+
+  # Container infrastructure
+  ar_repo_name = var.ar_repo_name
+
+  labels = var.labels
 }
 
-# =============================================================================
-# Module: Storage - GCS Buckets & BigQuery
-# =============================================================================
-# Creates all storage resources: buckets, datasets, tables
+# -----------------------------------------------------------------------------
+# Pipeline Module - Orchestration & Execution
+# -----------------------------------------------------------------------------
+# Business Domain: Data pipeline orchestration and execution
+#
+# Creates all runtime resources including:
+# - Workflows: Cloud Workflows for ELT orchestration
+# - Event Triggers: Eventarc triggers on GCS uploads
+# - Compute: Cloud Run jobs for dbt execution
+#
+# Dependencies: platform (requires service accounts, storage, Artifact Registry)
 
-module "storage" {
-  source = "./modules/storage"
-  
-  project_id = local.project_id
-  region     = local.region
-  
-  bucket_name          = var.bucket_name
-  dataset_id           = var.dataset_id
-  enable_partitioning  = var.enable_partitioning
-  enable_lifecycle     = var.enable_lifecycle
-  
-  labels = local.labels
-  
-  # Wait for IAM to be ready
-  depends_on = [module.iam]
+module "pipeline" {
+  source = "./modules/pipeline"
+
+  project_id = var.project_id
+  region     = var.region
+
+  # Dependencies from platform module
+  retail_etl_sa_email  = module.platform.retail_etl_sa_email
+  dbt_runner_secret_id = module.platform.dbt_runner_secret_id
+  bucket_name          = module.platform.bucket_name
+  dataset_id           = module.platform.dataset_id
+
+  # Pipeline configuration
+  workflow_name = var.workflow_name
+  dbt_job_name  = var.dbt_job_name
+  dbt_image     = var.dbt_image
+
+  labels = var.labels
 }
 
-# =============================================================================
-# Module: Compute - Cloud Run Jobs & Artifact Registry
-# =============================================================================
-# Creates compute resources for dbt execution
-
-module "compute" {
-  source = "./modules/compute"
-  
-  project_id = local.project_id
-  region     = local.region
-  
-  dbt_job_name        = var.dbt_job_name
-  dbt_image           = var.dbt_image
-  ar_repo_name        = var.ar_repo_name
-  retail_etl_sa_email = module.iam.retail_etl_sa_email
-  dbt_runner_secret_id = module.iam.dbt_runner_secret_id
-  
-  labels = local.labels
-  
-  depends_on = [module.iam, module.storage]
-}
-
-# =============================================================================
-# Module: Orchestration - Workflows, Eventarc, Triggers
-# =============================================================================
-# Creates workflow and event-driven orchestration
-
-module "orchestration" {
-  source = "./modules/orchestration"
-  
-  project_id = local.project_id
-  region     = local.region
-  
-  workflow_name       = var.workflow_name
-  bucket_name         = module.storage.bucket_name
-  dataset_id          = module.storage.dataset_id
-  dbt_job_name        = module.compute.dbt_job_name
-  retail_etl_sa_email = module.iam.retail_etl_sa_email
-  
-  labels = local.labels
-  
-  depends_on = [module.compute, module.storage]
-}
-
-# =============================================================================
-# Module: Observability - Monitoring, Alerts, Dashboards
-# =============================================================================
-# Creates monitoring infrastructure (Phase 2)
+# -----------------------------------------------------------------------------
+# Observability Module - Monitoring, Alerting & Data Quality
+# -----------------------------------------------------------------------------
+# Business Domain: Cross-cutting concerns for platform health and data quality
+#
+# Creates observability resources including:
+# - Monitoring (Phase 2): Alert policies, metrics, dashboards, budget alerts
+# - Data Quality (Phase 3): Validation functions, quality checks, anomaly detection
+#
+# Dependencies: platform, pipeline (needs resources to monitor)
 
 module "observability" {
   source = "./modules/observability"
-  
-  project_id = local.project_id
-  region     = local.region
-  
-  workflow_name          = var.workflow_name
-  dbt_job_name           = var.dbt_job_name
+
+  project_id = var.project_id
+  region     = var.region
+
+  # Dependencies from pipeline module
+  workflow_name = module.pipeline.workflow_name
+  dbt_job_name  = module.pipeline.dbt_job_name
+
+  # Dependencies from platform module
+  dataset_id  = module.platform.dataset_id
+  bucket_name = module.platform.bucket_name
+
+  # Observability configuration
   notification_channels  = var.notification_channels
   enable_cost_alerts     = var.enable_cost_alerts
   monthly_budget_amount  = var.monthly_budget_amount
-  
-  labels = local.labels
-  
-  depends_on = [module.orchestration]
-}
-
-# =============================================================================
-# Module: Data Quality - Validation & Testing
-# =============================================================================
-# Creates data quality infrastructure (Phase 3)
-
-module "data_quality" {
-  source = "./modules/data_quality"
-  
-  project_id = local.project_id
-  region     = local.region
-  
-  dataset_id             = module.storage.dataset_id
-  bucket_name            = module.storage.bucket_name
   quality_check_schedule = var.quality_check_schedule
-  
-  labels = local.labels
-  
-  depends_on = [module.storage]
+
+  labels = var.labels
 }

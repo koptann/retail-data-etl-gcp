@@ -1,244 +1,201 @@
-# Terraform Modules
+# Terraform Modules - Domain-Driven Architecture
 
-This directory contains reusable Terraform modules for the Retail Data Platform infrastructure.
+This directory contains domain-driven Terraform modules organized by **business capability** rather than technical resource types.
 
-## Module Architecture
+## Design Philosophy: Domain-Driven Design
 
-Each module follows these principles:
+Following DDD principles and microservices architecture patterns, modules are organized by **what they do** (business function) rather than **what they are** (resource type).
 
-1. **Single Responsibility** - Each module manages one logical component
-2. **Minimal Dependencies** - Modules depend only on what they need
-3. **Clear Interfaces** - Well-defined inputs (variables) and outputs
-4. **Self-Documenting** - Each module has its own README
+### Why Domain-Driven Modules?
 
-## Available Modules
+Just like in microservices architecture where services are organized by business domain (e.g., "order-service", "payment-service") rather than by technical layer (e.g., "database-service", "api-service"), our infrastructure modules follow the same principle:
 
-### 1. `iam/` - Identity & Access Management
-**Purpose:** Service accounts and IAM bindings
+- ✅ **Clear ownership** - Each module owns a complete business capability
+- ✅ **Cohesive changes** - Resources that change together stay together
+- ✅ **Bounded contexts** - Well-defined domain boundaries
+- ✅ **Easier reasoning** - Align with how data engineers think about the platform
 
-**Creates:**
-- Service accounts (cloudbuild-sa, retail-etl-sa, dbt-runner)
-- IAM role bindings
-- Secret Manager for dbt credentials
+## Module Structure
 
-**Dependencies:** None (created first)
+\`\`\`
+modules/
+├── platform/          # DOMAIN: Infrastructure provisioning
+├── pipeline/          # DOMAIN: Data orchestration & execution
+└── observability/     # DOMAIN: Monitoring & quality (cross-cutting)
+\`\`\`
 
----
+### Module Descriptions
 
-### 2. `storage/` - Data Storage
-**Purpose:** GCS buckets and BigQuery datasets/tables
+#### \`platform/\` - Infrastructure Foundation
+**Business Capability:** Provision all foundational cloud resources
 
-**Creates:**
-- GCS bucket for data files
-- BigQuery dataset
-- Raw tables (raw_invoice, raw_country)
-- Lifecycle policies
+**Resources:**
+- **IAM:** Service accounts (cloudbuild-sa, retail-etl-sa, dbt-runner), IAM bindings, Secret Manager
+- **Storage:** GCS bucket with lifecycle policies, BigQuery dataset, raw tables with partitioning
+- **Container Infrastructure:** Artifact Registry for dbt images
 
-**Dependencies:** IAM (for service account references)
+**Domain Boundaries:**
+- **Owns:** Infrastructure resources that define platform capacity
+- **Does NOT own:** Runtime execution or observability
 
----
-
-### 3. `compute/` - Compute Resources
-**Purpose:** Cloud Run jobs and container registry
-
-**Creates:**
-- Artifact Registry repository
-- Cloud Run job for dbt execution
-- Container configuration with secrets
-
-**Dependencies:** IAM, Storage (for service accounts and dataset)
+**Dependencies:** None (foundational module)
 
 ---
 
-### 4. `orchestration/` - Workflow Orchestration
-**Purpose:** Event-driven pipeline orchestration
+#### \`pipeline/\` - Orchestration & Execution
+**Business Capability:** Orchestrate and execute the ELT data pipeline
 
-**Creates:**
-- Cloud Workflows definition
-- Eventarc trigger on GCS uploads
-- Pub/Sub topics
+**Resources:**
+- **Workflows:** Cloud Workflows YAML definitions, orchestration logic
+- **Event Triggers:** Eventarc triggers for GCS file uploads
+- **Compute:** Cloud Run jobs for dbt execution with secret mounting
 
-**Dependencies:** Compute, Storage (for workflow logic)
+**Domain Boundaries:**
+- **Owns:** Runtime pipeline execution and event handling
+- **Does NOT own:** Infrastructure provisioning or monitoring setup
 
----
-
-### 5. `observability/` - Monitoring & Alerts
-**Purpose:** Operational visibility and alerting
-
-**Creates:**
-- Cloud Monitoring alert policies
-- Log-based metrics
-- Budget alerts
-- Dashboards
-
-**Dependencies:** Orchestration (for monitored resources)
+**Dependencies:** \`platform\` (requires service accounts, storage, Artifact Registry)
 
 ---
 
-### 6. `data_quality/` - Data Quality Checks
-**Purpose:** Validation and quality monitoring
+#### \`observability/\` - Monitoring & Quality
+**Business Capability:** Ensure platform reliability and data trustworthiness
 
-**Creates:**
-- Cloud Functions for CSV validation
-- Cloud Scheduler for daily checks
-- BigQuery views for quality metrics
+**Resources:**
+- **Monitoring (Phase 2):** Alert policies, log-based metrics, dashboards, budget alerts
+- **Data Quality (Phase 3):** Cloud Functions for validation, Cloud Scheduler, quality metric views
 
-**Dependencies:** Storage (for dataset access)
+**Domain Boundaries:**
+- **Owns:** Monitoring, alerting, data validation across all domains (cross-cutting)
+- **Does NOT own:** Infrastructure or pipeline execution
+
+**Dependencies:** \`platform\` and \`pipeline\` (needs resources to monitor)
 
 ---
 
-## Module Usage
+## Dependency Graph
 
-### Basic Pattern
+\`\`\`
+┌─────────────┐
+│  platform   │  (no dependencies)
+└──────┬──────┘
+       │
+       ↓
+┌─────────────┐
+│  pipeline   │  (depends: platform)
+└──────┬──────┘
+       │
+       ↓
+┌─────────────┐
+│observability│  (depends: platform, pipeline)
+└─────────────┘
+\`\`\`
 
-```hcl
-module "module_name" {
-  source = "./modules/module_name"
-  
-  # Required inputs
-  project_id = var.project_id
-  region     = var.region
-  
-  # Module-specific configurations
-  # ...
-  
-  # Common labels
-  labels = local.labels
-  
-  # Dependencies (explicit)
-  depends_on = [module.dependency_module]
+## Comparison: Domain-Driven vs. Technical Layers
+
+### Domain-Driven Modules (This Approach)
+\`\`\`
+platform/       → "Build the infrastructure"
+pipeline/       → "Run the data pipeline"
+observability/  → "Monitor and validate"
+\`\`\`
+**Organized by:** Business capability (WHAT it does)
+
+**Benefits:**
+- Matches data engineering mental model
+- Cohesive changesets (IAM + storage + compute for one feature)
+- Aligns with DDD bounded contexts
+- Follows industry patterns (Netflix, Airbnb, Uber data platforms)
+
+### Technical Layer Modules (Alternative)
+\`\`\`
+iam/            → "Identity resources"
+storage/        → "Storage resources"
+compute/        → "Compute resources"
+orchestration/  → "Orchestration resources"
+\`\`\`
+**Organized by:** Resource type (WHAT it is)
+
+**Trade-offs:**
+- Matches GCP service boundaries
+- Common in generic Terraform examples
+- Scatters related changes across multiple modules
+- Better for platform teams serving multiple applications
+
+## Usage Patterns
+
+### Root Module Composition
+
+\`\`\`hcl
+# infra/main.tf
+module "platform" {
+  source = "./modules/platform"
+  # ... configuration
 }
-```
 
-### Accessing Module Outputs
-
-```hcl
-# Reference outputs from other modules
-module "orchestration" {
-  source = "./modules/orchestration"
+module "pipeline" {
+  source = "./modules/pipeline"
   
-  bucket_name = module.storage.bucket_name  # Output from storage module
-  # ...
+  # Dependencies from platform
+  retail_etl_sa_email = module.platform.retail_etl_sa_email
+  bucket_name         = module.platform.bucket_name
+  # ... more config
 }
-```
 
-## Development Guidelines
-
-### Creating a New Module
-
-1. **Create module directory**
-   ```bash
-   mkdir -p infra/modules/new_module
-   ```
-
-2. **Create standard files**
-   ```
-   new_module/
-   ├── main.tf         # Resource definitions
-   ├── variables.tf    # Input variables
-   ├── outputs.tf      # Output values
-   └── README.md       # Documentation
-   ```
-
-3. **Document the module**
-   - Purpose and responsibilities
-   - Input variables with descriptions
-   - Output values with descriptions
-   - Dependencies
-   - Usage examples
-
-4. **Test independently**
-   ```bash
-   cd infra/modules/new_module
-   terraform init
-   terraform validate
-   terraform fmt
-   ```
-
-### Module Best Practices
-
-- ✅ **Use descriptive variable names** - `bucket_name` not `name`
-- ✅ **Provide default values** when sensible
-- ✅ **Add validation** to variable inputs
-- ✅ **Export useful outputs** for other modules
-- ✅ **Use comments** to explain complex logic
-- ✅ **Follow naming conventions** consistent with GCP
-- ✅ **Tag resources** with labels for tracking
-
-### Variable Validation Example
-
-```hcl
-variable "region" {
-  description = "GCP region for resources"
-  type        = string
+module "observability" {
+  source = "./modules/observability"
   
-  validation {
-    condition     = can(regex("^[a-z]+-[a-z]+[0-9]$", var.region))
-    error_message = "Region must be a valid GCP region (e.g., europe-west1)"
-  }
+  # Dependencies from both modules
+  workflow_name = module.pipeline.workflow_name
+  dataset_id    = module.platform.dataset_id
+  # ... more config
 }
-```
+\`\`\`
 
-## Testing Modules
+### Module Interface Contract
 
-### 1. Format Check
-```bash
-terraform fmt -check -recursive
-```
+Each module follows a consistent contract:
 
-### 2. Validation
-```bash
-terraform validate
-```
+1. **README.md** - Module purpose, resources, domain boundaries
+2. **main.tf** - Resource definitions with TODO comments
+3. **variables.tf** - Input parameters (grouped by concern)
+4. **outputs.tf** - Exported values for downstream modules
 
-### 3. Plan (Dry Run)
-```bash
-terraform plan
-```
+## Testing Strategy
 
-### 4. Targeted Apply (Single Module)
-```bash
-terraform apply -target=module.module_name
-```
+Each module should be testable in isolation:
 
-## Module Dependency Graph
+- **Platform:** "Can I create service accounts and storage?"
+- **Pipeline:** "Can workflows be triggered and execute successfully?"
+- **Observability:** "Are alerts firing on simulated failures?"
 
-```
-iam (no dependencies)
-  ↓
-storage (depends on: iam)
-  ↓
-compute (depends on: iam, storage)
-  ↓
-orchestration (depends on: compute, storage)
-  ↓
-observability (depends on: orchestration)
+## Industry Alignment
 
-data_quality (depends on: storage)
-```
+This structure mirrors data platform patterns from:
 
-## Troubleshooting
+- **Netflix:** \`data-collection/\`, \`data-processing/\`, \`data-access/\`
+- **Airbnb:** \`ingestion/\`, \`processing/\`, \`serving/\`
+- **Uber:** \`onboarding/\`, \`compute/\`, \`consumption/\`
 
-### Module Not Found
-```
-Error: Module not installed
-```
-**Solution:** Run `terraform init` to download modules
+All organized by **pipeline stages** and **business capabilities**, not technical resource types.
 
-### Circular Dependency
-```
-Error: Cycle: module.a → module.b → module.a
-```
-**Solution:** Refactor to break the cycle, use explicit `depends_on`
+## Evolution Path
 
-### Output Not Available
-```
-Error: Reference to undeclared output value
-```
-**Solution:** Check module's `outputs.tf` file, ensure output is defined
+### Phase 1: Core Implementation
+- Implement \`platform\` module (IAM + storage + AR)
+- Implement \`pipeline\` module (workflows + triggers + Cloud Run)
+- Basic \`observability\` structure
 
-## Additional Resources
+### Phase 2: Enhanced Observability
+- Add monitoring dashboards
+- Implement alert policies
+- Add budget alerts
 
-- [Terraform Module Documentation](https://www.terraform.io/docs/language/modules/)
-- [Google Provider Documentation](https://registry.terraform.io/providers/hashicorp/google/latest/docs)
-- [Module Best Practices](https://www.terraform.io/docs/language/modules/develop/index.html)
+### Phase 3: Data Quality
+- Add validation functions
+- Implement quality metrics
+- Add anomaly detection
+
+## Questions?
+
+For detailed implementation guidance, see each module's README.md file.
