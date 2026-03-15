@@ -9,7 +9,7 @@ WITH fct_invoices_cte AS (
         {{ dbt_utils.generate_surrogate_key(['CustomerID', 'Country']) }} as customer_id,
         cast(Quantity as float64) AS quantity,
         cast(Quantity as float64) * cast(UnitPrice as float64) AS total
-    FROM {{ source('retail_dsy', 'raw_invoice') }}
+    FROM {{ source('mtech_retail_dsy', 'raw_invoice') }}
     WHERE cast(Quantity as float64) > 0
 )
 SELECT

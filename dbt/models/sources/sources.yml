@@ -2,9 +2,9 @@
 version: 2
 
 sources:
-  - name: retail_dsy
+  - name: mtech_retail_dsy
     database: "{{ env_var('GCP_PROJECT_ID', 'mtech-retail-etl') }}"  # Reads from env var, fallback to default
-    schema: retail_dsy # BigQuery dataset name
+    schema: mtech_retail_dsy # BigQuery dataset name
     description: "Raw data loaded from GCS via Cloud Workflows"
 
     tables:
