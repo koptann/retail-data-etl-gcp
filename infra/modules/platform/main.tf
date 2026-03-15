@@ -518,7 +518,7 @@ resource "google_cloudbuild_trigger" "main_branch_deploy" {
     _BUCKET_NAME          = var.bucket_name
     _DBT_JOB_NAME         = var.dbt_job_name
     _ENVIRONMENT          = var.environment
-    _MONTHLY_BUDGET       = tostring(var.monthly_budget_amount)
+    _MONTHLY_BUDGET       = var.monthly_budget_amount
   }
 
   depends_on = [
