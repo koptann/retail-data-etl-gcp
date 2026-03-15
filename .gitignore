@@ -12,6 +12,9 @@ override.tf.json
 *_override.tf.json
 .terraformrc
 terraform.rc
+tfplan
+*.tfplan
+plan.out
 
 # dbt
 dbt-code/target/

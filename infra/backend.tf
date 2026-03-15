@@ -25,10 +25,10 @@ terraform {
   backend "gcs" {
     # Bucket name will be provided via -backend-config during init
     # bucket = "YOUR-TF-STATE-BUCKET"
-    
+
     # Prefix for state file path in bucket
     # prefix = "terraform/infra"
-    
+
     # Enable state locking
     # GCS provides automatic state locking via generation IDs
   }

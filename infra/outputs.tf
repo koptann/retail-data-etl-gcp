@@ -106,7 +106,7 @@ output "project_info" {
 
 output "quick_commands" {
   description = "Useful commands for managing the platform"
-  value = <<-EOT
+  value       = <<-EOT
     
     📊 Check pipeline status:
       bq ls --project_id=${var.project_id} ${module.platform.dataset_id}

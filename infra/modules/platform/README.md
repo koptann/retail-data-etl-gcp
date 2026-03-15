@@ -21,8 +21,8 @@ This module represents the **"Build"** phase - everything needed to establish th
 ### Data Storage
 - ✅ **GCS Bucket:** Raw data lake with lifecycle policies
 - ✅ **BigQuery Dataset:** Data warehouse (EU region)
-- ✅ **Raw Tables:** `raw_invoice`, `raw_country` with partitioning
-- ✅ **Optimizations:** Date-based partitioning, clustering, lifecycle management
+- ✅ **Raw Tables:** `raw_invoice`, `raw_country` (STRING types for CSV compatibility)
+- ✅ **Optimizations:** GCS lifecycle management (90-day archival to COLDLINE)
 
 ### Container Infrastructure
 - ✅ **Artifact Registry:** Docker repository for dbt images
@@ -31,9 +31,10 @@ This module represents the **"Build"** phase - everything needed to establish th
 ## Features
 
 - 🔐 **3-Tier Security Model** - Separation of duties across infrastructure, orchestration, and data layers
-- 💾 **Cost-Optimized Storage** - Partitioning, clustering, and lifecycle policies
+- 💾 **Cost-Optimized Storage** - GCS lifecycle policies for automatic archival
 - 🔒 **Encrypted at Rest** - All data encrypted by default (Google-managed keys)
 - 📦 **Container Ready** - Artifact Registry ready for dbt container images
+- 📋 **Raw Tables** - STRING schemas for direct CSV loading (transformations apply types)
 
 ## Domain Boundaries
 

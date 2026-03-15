@@ -140,7 +140,7 @@ variable "monthly_budget_amount" {
 variable "quality_check_schedule" {
   description = "Cron schedule for data quality checks (Cloud Scheduler)"
   type        = string
-  default     = "0 9 * * *"  # Daily at 9 AM UTC
+  default     = "0 9 * * *" # Daily at 9 AM UTC
 }
 
 # -----------------------------------------------------------------------------
@@ -169,4 +169,19 @@ variable "tf_state_prefix" {
   description = "Prefix for Terraform state in GCS bucket"
   type        = string
   default     = "terraform/infra"
+}
+
+# -----------------------------------------------------------------------------
+# Resource Tagging
+# -----------------------------------------------------------------------------
+
+variable "labels" {
+  description = "Common labels to apply to all resources for organization and cost tracking"
+  type        = map(string)
+  default = {
+    managed_by  = "terraform"
+    project     = "retail-data-platform"
+    owner       = "koptann"
+    environment = "dev"
+  }
 }
